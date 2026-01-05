@@ -13,7 +13,9 @@
     "next": "Next",
     "search": "Search",
     "filter": "Filter",
-    "actions": "Actions"
+    "actions": "Actions",
+    "optional": "optional",
+    "error": "Error"
   },
   "auth": {
     "login": "Sign In",
@@ -78,8 +80,21 @@
     "allowEdit": "Allow editing",
     "sharedWith": "Users with whom it is shared",
     "itemAdded": "Item added!",
+    "itemAddedDescription": "{name} has been added to the list",
+    "similarItemBought": "You already bought \"{name}\" on {date}",
     "itemDeleted": "Item deleted",
-    "itemDeletedDescription": "The item has been removed from the list"
+    "itemDeletedDescription": "The item has been removed from the list",
+    "toBuy": "To Buy",
+    "purchased": "Purchased",
+    "quantity": "Quantity",
+    "characteristics": "Characteristics",
+    "listNotFound": "List not found",
+    "listNotFoundDescription": "The list you are looking for does not exist",
+    "errorAddingItem": "Error adding item",
+    "errorUpdatingItem": "Error updating item",
+    "errorSendingNotification": "Error sending notification",
+    "itemUpdated": "Item updated",
+    "itemUpdatedDescription": "Changes have been saved"
   },
   "notifications": {
     "title": "Notifications",
@@ -107,6 +122,17 @@
     "smartHistoryText": "The system remembers what you bought and when, for smart suggestions.",
     "startFree": "Get Started Free",
     "login": "Sign In"
+  },
+  "purchases": {
+    "title": "Purchase History",
+    "subtitle": "All products purchased from your lists and shared ones",
+    "noPurchases": "No purchases yet",
+    "noPurchasesDescription": "Products you complete in lists will appear here",
+    "products": "product",
+    "productsPlural": "products",
+    "purchased": "purchased",
+    "list": "List",
+    "completedBy": "Completed by"
   },
   "errors": {
     "notFound": "Not found",

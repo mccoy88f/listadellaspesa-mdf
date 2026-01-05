@@ -13,7 +13,9 @@
     "next": "Avanti",
     "search": "Cerca",
     "filter": "Filtra",
-    "actions": "Azioni"
+    "actions": "Azioni",
+    "optional": "opzionale",
+    "error": "Errore"
   },
   "auth": {
     "login": "Accedi",
@@ -78,8 +80,21 @@
     "allowEdit": "Permetti modifica",
     "sharedWith": "Utenti con cui è condivisa",
     "itemAdded": "Oggetto aggiunto!",
+    "itemAddedDescription": "{name} è stato aggiunto alla lista",
+    "similarItemBought": "Hai già acquistato \"{name}\" in data {date}",
     "itemDeleted": "Oggetto eliminato",
-    "itemDeletedDescription": "L'oggetto è stato rimosso dalla lista"
+    "itemDeletedDescription": "L'oggetto è stato rimosso dalla lista",
+    "toBuy": "Da acquistare",
+    "purchased": "Acquistati",
+    "quantity": "Quantità",
+    "characteristics": "Caratteristiche",
+    "listNotFound": "Lista non trovata",
+    "listNotFoundDescription": "La lista che stai cercando non esiste",
+    "errorAddingItem": "Errore nell'aggiunta dell'oggetto",
+    "errorUpdatingItem": "Errore nell'aggiornamento dell'oggetto",
+    "errorSendingNotification": "Errore nell'invio della notifica",
+    "itemUpdated": "Oggetto aggiornato",
+    "itemUpdatedDescription": "Le modifiche sono state salvate"
   },
   "notifications": {
     "title": "Notifiche",
@@ -107,6 +122,17 @@
     "smartHistoryText": "Il sistema ricorda cosa hai comprato e quando, per suggerimenti intelligenti.",
     "startFree": "Inizia Gratis",
     "login": "Accedi"
+  },
+  "purchases": {
+    "title": "Storico Acquisti",
+    "subtitle": "Tutti i prodotti acquistati dalle tue liste e da quelle condivise",
+    "noPurchases": "Nessun acquisto ancora",
+    "noPurchasesDescription": "I prodotti che completi nelle liste appariranno qui",
+    "products": "prodotto",
+    "productsPlural": "prodotti",
+    "purchased": "acquistati",
+    "list": "Lista",
+    "completedBy": "Completato da"
   },
   "errors": {
     "notFound": "Non trovato",

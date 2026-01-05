@@ -93,7 +93,7 @@ export async function POST(
       },
     });
 
-    // Crea notifica per l'utente con cui è stata condivisa
+    // Crea notifica per l'utente con cui è stata condivisa (browser + email)
     await prisma.notification.create({
       data: {
         type: 'list_shared',
@@ -104,6 +104,22 @@ export async function POST(
         listId,
       },
     });
+
+    // Invia anche email
+    try {
+      const { sendNotificationEmail } = await import('@/lib/email');
+      await sendNotificationEmail(
+        targetUser.email,
+        targetUser.name,
+        user.name || user.email,
+        'Lista condivisa',
+        `${user.name || user.email} ha condiviso la lista "${list.name}" con te`,
+        list.name,
+        listId
+      );
+    } catch (error) {
+      console.error(`Errore invio email a ${targetUser.email}:`, error);
+    }
 
     return NextResponse.json(sharedList, { status: 201 });
   } catch (error) {

@@ -66,10 +66,13 @@ export async function POST(request: Request) {
       );
     }
 
-    // Crea notifiche per tutti i destinatari
+    // Importa la funzione email
+    const { sendNotificationEmail } = await import('@/lib/email');
+
+    // Crea notifiche per tutti i destinatari (browser + email)
     const notifications = await Promise.all(
-      recipients.map(recipient =>
-        prisma.notification.create({
+      recipients.map(async (recipient) => {
+        const notification = await prisma.notification.create({
           data: {
             type: 'shopping_alert',
             title: 'Sto andando a fare la spesa!',
@@ -78,8 +81,25 @@ export async function POST(request: Request) {
             receiverId: recipient.id,
             listId,
           },
-        })
-      )
+        });
+
+        // Invia anche email
+        try {
+          await sendNotificationEmail(
+            recipient.email,
+            recipient.name,
+            user.name || user.email,
+            'Sto andando a fare la spesa!',
+            message || `${user.name || user.email} sta andando a fare la spesa. Serve qualcosa dalla lista "${list.name}"?`,
+            list.name,
+            listId
+          );
+        } catch (error) {
+          console.error(`Errore invio email a ${recipient.email}:`, error);
+        }
+
+        return notification;
+      })
     );
 
     return NextResponse.json({

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
-import { ArrowLeft, Plus, Check, X, Trash2, Bell, History } from "lucide-react"
+import { ArrowLeft, Plus, Check, X, Trash2, Bell, History, Edit, Save } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -17,7 +17,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 interface ShoppingListItem {
   id: number
@@ -50,6 +50,10 @@ export default function ListDetailPage() {
   const [newItemQuantity, setNewItemQuantity] = useState("")
   const [history, setHistory] = useState<Array<{ itemName: string; lastAddedAt: string }>>([])
   const [showHistory, setShowHistory] = useState(false)
+  const [editingItem, setEditingItem] = useState<number | null>(null)
+  const [editItemName, setEditItemName] = useState("")
+  const [editItemQuantity, setEditItemQuantity] = useState("")
+  const [similarItemSuggestion, setSimilarItemSuggestion] = useState<{ name: string; lastAddedAt: string } | null>(null)
 
   useEffect(() => {
     fetchList()
@@ -102,19 +106,35 @@ export default function ListDetailPage() {
       })
 
       if (res.ok) {
-        const newItem = await res.json()
+        const data = await res.json()
+        const newItem = data.item
+        const similarItem = data.similarItem
+        
         setList((prev) => prev ? {
           ...prev,
           items: [...prev.items, newItem],
         } : null)
+        
+        // Mostra suggerimento se c'è un prodotto simile
+        if (similarItem) {
+          const lastDate = new Date(similarItem.lastAddedAt).toLocaleDateString('it-IT')
+          setSimilarItemSuggestion(similarItem)
+          toast({
+            title: "Prodotto aggiunto!",
+            description: `Hai già acquistato "${similarItem.name}" in data ${lastDate}`,
+          })
+        } else {
+          toast({
+            title: "Oggetto aggiunto!",
+            description: `${newItem.name} è stato aggiunto alla lista`,
+          })
+        }
+        
         setNewItemName("")
         setNewItemQuantity("")
         setNewItemOpen(false)
+        setSimilarItemSuggestion(null)
         fetchHistory() // Aggiorna lo storico
-        toast({
-          title: "Oggetto aggiunto!",
-          description: `${newItem.name} è stato aggiunto alla lista`,
-        })
       } else {
         const data = await res.json()
         throw new Error(data.error || "Errore nell'aggiunta")
@@ -205,6 +225,65 @@ export default function ListDetailPage() {
     setNewItemName(itemName)
     setShowHistory(false)
   }
+
+  const handleEditItem = (item: ShoppingListItem) => {
+    setEditingItem(item.id)
+    setEditItemName(item.name)
+    setEditItemQuantity(item.quantity || "")
+  }
+
+  const handleSaveEdit = async (itemId: number) => {
+    try {
+      const res = await fetch(`/api/lists/${listId}/items/${itemId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editItemName,
+          quantity: editItemQuantity || undefined,
+        }),
+      })
+
+      if (res.ok) {
+        const updatedItem = await res.json()
+        setList((prev) => prev ? {
+          ...prev,
+          items: prev.items.map((item) =>
+            item.id === itemId ? updatedItem : item
+          ),
+        } : null)
+        setEditingItem(null)
+        toast({
+          title: "Oggetto aggiornato",
+          description: "Le modifiche sono state salvate",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Errore",
+        description: "Errore nell'aggiornamento dell'oggetto",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setEditingItem(null)
+    setEditItemName("")
+    setEditItemQuantity("")
+  }
+
+  // Raggruppa prodotti completati per giorno
+  const completedItems = list.items.filter((i) => i.completed && i.completedAt)
+  const completedByDate: Record<string, ShoppingListItem[]> = {}
+  
+  completedItems.forEach((item) => {
+    if (!item.completedAt) return
+    const date = new Date(item.completedAt).toISOString().split('T')[0]
+    if (!completedByDate[date]) {
+      completedByDate[date] = []
+    }
+    completedByDate[date].push(item)
+  })
 
   if (loading) {
     return (
@@ -367,53 +446,131 @@ export default function ListDetailPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-2">
-            {list.items.map((item) => (
-              <Card
-                key={item.id}
-                className={`transition-all ${
-                  item.completed ? "opacity-60 bg-muted" : ""
-                }`}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
-                    <button
-                      onClick={() => handleToggleItem(item.id, item.completed)}
-                      className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-                        item.completed
-                          ? "bg-primary border-primary"
-                          : "border-muted-foreground"
-                      }`}
-                    >
-                      {item.completed && <Check className="h-4 w-4 text-primary-foreground" />}
-                    </button>
-                    <div className="flex-1">
-                      <div
-                        className={`font-medium ${
-                          item.completed ? "line-through text-muted-foreground" : ""
-                        }`}
-                      >
-                        {item.name}
-                      </div>
-                      {item.quantity && (
-                        <div className="text-sm text-muted-foreground">
-                          Quantità: {item.quantity}
+          <>
+            {/* Prodotti non completati */}
+            <div className="space-y-2 mb-6">
+              <h2 className="text-lg font-semibold mb-2">Da acquistare</h2>
+              {list.items.filter((i) => !i.completed).map((item) => (
+                <Card key={item.id} className="transition-all">
+                  <CardContent className="p-4">
+                    {editingItem === item.id ? (
+                      <div className="flex items-center gap-4">
+                        <div className="flex-1 space-y-2">
+                          <Input
+                            value={editItemName}
+                            onChange={(e) => setEditItemName(e.target.value)}
+                            placeholder="Nome oggetto"
+                          />
+                          <Input
+                            value={editItemQuantity}
+                            onChange={(e) => setEditItemQuantity(e.target.value)}
+                            placeholder="Quantità (opzionale)"
+                          />
                         </div>
-                      )}
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDeleteItem(item.id)}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleSaveEdit(item.id)}
+                        >
+                          <Save className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={handleCancelEdit}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-4">
+                        <button
+                          onClick={() => handleToggleItem(item.id, item.completed)}
+                          className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-muted-foreground flex items-center justify-center transition-all hover:border-primary"
+                        >
+                        </button>
+                        <div className="flex-1">
+                          <div className="font-medium">{item.name}</div>
+                          {item.quantity && (
+                            <div className="text-sm text-muted-foreground">
+                              Quantità: {item.quantity}
+                            </div>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEditItem(item)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteItem(item.id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Prodotti completati divisi per giorno */}
+            {Object.keys(completedByDate).length > 0 && (
+              <div className="space-y-4">
+                <h2 className="text-lg font-semibold">Acquistati</h2>
+                {Object.entries(completedByDate)
+                  .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
+                  .map(([date, items]) => (
+                    <Card key={date}>
+                      <CardHeader>
+                        <CardTitle className="text-base">
+                          {new Date(date).toLocaleDateString('it-IT', {
+                            weekday: 'long',
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric',
+                          })}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          {items.map((item) => (
+                            <div
+                              key={item.id}
+                              className="flex items-center justify-between p-2 border rounded bg-muted/50"
+                            >
+                              <div className="flex-1">
+                                <div className="font-medium line-through text-muted-foreground">
+                                  {item.name}
+                                </div>
+                                {item.quantity && (
+                                  <div className="text-sm text-muted-foreground">
+                                    Quantità: {item.quantity}
+                                  </div>
+                                )}
+                              </div>
+                              {list.sharedWith && list.sharedWith.length > 0 && (
+                                <div className="text-xs text-muted-foreground">
+                                  {item.completedAt && new Date(item.completedAt).toLocaleTimeString('it-IT', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

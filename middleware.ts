@@ -9,8 +9,15 @@ const intlMiddleware = createMiddleware({
   localePrefix: 'always'
 });
 
+// Funzione per verificare se il cookie session è valido (contiene un numero)
+function isValidSessionCookie(sessionCookie: string | undefined): boolean {
+  if (!sessionCookie) return false;
+  const userId = parseInt(sessionCookie);
+  return !isNaN(userId) && userId > 0;
+}
+
 export function middleware(request: NextRequest) {
-  const session = request.cookies.get('session');
+  const sessionCookie = request.cookies.get('session')?.value;
   const { pathname } = request.nextUrl;
 
   // Estrai la lingua dal pathname
@@ -36,14 +43,16 @@ export function middleware(request: NextRequest) {
   const publicRoutes = ['/login', '/register'];
   const isPublicRoute = publicRoutes.some(route => pathWithoutLocale === route || pathWithoutLocale.startsWith(route + '/'));
 
+  const hasValidSession = isValidSessionCookie(sessionCookie);
+
   // Se l'utente è autenticato e cerca di accedere a login/register, reindirizza alla dashboard
-  if (session && isPublicRoute) {
+  if (hasValidSession && isPublicRoute) {
     const locale = pathname.split('/')[1] || defaultLocale;
     return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
   }
 
   // Se l'utente non è autenticato e cerca di accedere a route protette, reindirizza al login
-  if (!session && !isPublicRoute && pathWithoutLocale !== '/') {
+  if (!hasValidSession && !isPublicRoute && pathWithoutLocale !== '/') {
     const locale = pathname.split('/')[1] || defaultLocale;
     return NextResponse.redirect(new URL(`/${locale}/login`, request.url));
   }

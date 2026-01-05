@@ -56,7 +56,24 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(list);
+    // Recupera informazioni utenti che hanno completato gli item
+    const completedByUserIds = [...new Set(list.items.map(item => item.completedBy).filter(Boolean))];
+    const completedByUsers = completedByUserIds.length > 0 ? await prisma.user.findMany({
+      where: { id: { in: completedByUserIds as number[] } },
+      select: { id: true, email: true, name: true },
+    }) : [];
+    const completedByUserMap = new Map(completedByUsers.map(u => [u.id, u]));
+
+    // Aggiungi informazioni completedBy agli item
+    const itemsWithCompletedBy = list.items.map(item => ({
+      ...item,
+      completedByUser: item.completedBy ? completedByUserMap.get(item.completedBy) : null,
+    }));
+
+    return NextResponse.json({
+      ...list,
+      items: itemsWithCompletedBy,
+    });
   } catch (error) {
     console.error('Errore nel recupero della lista:', error);
     return NextResponse.json(

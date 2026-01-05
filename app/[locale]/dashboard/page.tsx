@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useLocale } from "next-intl"
 import Link from "next/link"
 import { Navbar } from "@/components/Navbar"
 import { Button } from "@/components/ui/button"
@@ -23,6 +24,7 @@ interface ShoppingList {
   id: number
   name: string
   description?: string
+  store?: string
   ownerId: number
   items: any[]
   owner?: { id: number; email: string; name?: string }
@@ -31,6 +33,7 @@ interface ShoppingList {
 
 export default function DashboardPage() {
   const router = useRouter()
+  const locale = useLocale()
   const { toast } = useToast()
   const [lists, setLists] = useState<{ owned: ShoppingList[]; shared: ShoppingList[] }>({
     owned: [],
@@ -40,6 +43,7 @@ export default function DashboardPage() {
   const [newListOpen, setNewListOpen] = useState(false)
   const [newListName, setNewListName] = useState("")
   const [newListDescription, setNewListDescription] = useState("")
+  const [newListStore, setNewListStore] = useState("")
 
   useEffect(() => {
     fetchLists()
@@ -52,7 +56,8 @@ export default function DashboardPage() {
         const data = await res.json()
         setLists(data)
       } else if (res.status === 401) {
-        router.push("/login")
+        router.push(`/${locale}/login`)
+        router.refresh()
       }
     } catch (error) {
       console.error("Errore nel recupero delle liste:", error)
@@ -81,6 +86,7 @@ export default function DashboardPage() {
         }))
         setNewListName("")
         setNewListDescription("")
+        setNewListStore("")
         setNewListOpen(false)
         toast({
           title: "Lista creata!",
@@ -187,6 +193,15 @@ export default function DashboardPage() {
                     placeholder="Descrizione della lista"
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="store">Venditore/Negozio (opzionale)</Label>
+                  <Input
+                    id="store"
+                    value={newListStore}
+                    onChange={(e) => setNewListStore(e.target.value)}
+                    placeholder="Es: Esselunga, Conad, Amazon"
+                  />
+                </div>
                 <Button type="submit" className="w-full">
                   Crea Lista
                 </Button>
@@ -223,6 +238,11 @@ export default function DashboardPage() {
                       {list.description && (
                         <CardDescription className="mt-1">{list.description}</CardDescription>
                       )}
+                      {list.store && (
+                        <CardDescription className="mt-1">
+                          {locale === 'it' ? 'Negozio' : 'Store'}: {list.store}
+                        </CardDescription>
+                      )}
                     </div>
                     {list.ownerId && (
                       <Button
@@ -255,12 +275,12 @@ export default function DashboardPage() {
                       </div>
                     )}
                     <div className="flex gap-2 pt-2">
-                      <Link href={`/lists/${list.id}`} className="flex-1">
+                      <Link href={`/${locale}/lists/${list.id}`} className="flex-1">
                         <Button variant="default" className="w-full">
                           Apri
                         </Button>
                       </Link>
-                      <Link href={`/lists/${list.id}/share`}>
+                      <Link href={`/${locale}/lists/${list.id}/share`}>
                         <Button variant="outline" size="icon">
                           <Share2 className="h-4 w-4" />
                         </Button>
@@ -284,6 +304,11 @@ export default function DashboardPage() {
                   {list.description && (
                     <CardDescription>{list.description}</CardDescription>
                   )}
+                  {list.store && (
+                    <CardDescription>
+                      {locale === 'it' ? 'Negozio' : 'Store'}: {list.store}
+                    </CardDescription>
+                  )}
                   {list.owner && (
                     <CardDescription className="text-xs">
                       Di: {list.owner.name || list.owner.email}
@@ -302,7 +327,7 @@ export default function DashboardPage() {
                         {list.items?.filter((i) => i.completed).length || 0}
                       </span>
                     </div>
-                    <Link href={`/lists/${list.id}`} className="block">
+                    <Link href={`/${locale}/lists/${list.id}`} className="block">
                       <Button variant="default" className="w-full">
                         Apri
                       </Button>

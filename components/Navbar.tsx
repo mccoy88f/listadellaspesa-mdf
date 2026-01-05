@@ -74,6 +74,11 @@ export function Navbar() {
 
           <div className="flex items-center space-x-4">
             <LanguageSwitcher />
+            <Link href={`/${locale}/purchases`}>
+              <Button variant="ghost" size="sm">
+                Storico Acquisti
+              </Button>
+            </Link>
             <Link href={`/${locale}/notifications`}>
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-5 w-5" />

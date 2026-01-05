@@ -6,6 +6,7 @@ import { z } from 'zod';
 const createListSchema = z.object({
   name: z.string().min(1, 'Il nome è obbligatorio'),
   description: z.string().optional(),
+  store: z.string().optional(),
 });
 
 // GET /api/lists - Recupera tutte le liste dell'utente
@@ -84,12 +85,13 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, description } = createListSchema.parse(body);
+    const { name, description, store } = createListSchema.parse(body);
 
     const list = await prisma.shoppingList.create({
       data: {
         name,
         description: description || null,
+        store: store || null,
         ownerId: user.id,
       },
       include: {

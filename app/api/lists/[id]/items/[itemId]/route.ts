@@ -6,6 +6,7 @@ import { z } from 'zod';
 const updateItemSchema = z.object({
   name: z.string().min(1).optional(),
   quantity: z.string().optional(),
+  characteristics: z.string().optional(),
   completed: z.boolean().optional(),
 });
 
@@ -65,6 +66,7 @@ export async function PUT(
     if (data.completed !== undefined) {
       updateData.completed = data.completed;
       updateData.completedAt = data.completed ? new Date() : null;
+      updateData.completedBy = data.completed ? user.id : null;
     }
 
     const item = await prisma.shoppingListItem.update({

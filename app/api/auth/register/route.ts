@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { hashPassword } from '@/lib/auth';
-import { createSession } from '@/lib/session';
+import { generateVerificationCode, sendVerificationEmail } from '@/lib/email-verification';
 import { z } from 'zod';
 
 const registerSchema = z.object({
@@ -30,12 +30,20 @@ export async function POST(request: Request) {
     // Hash della password
     const hashedPassword = await hashPassword(password);
 
-    // Crea l'utente
+    // Genera codice di verifica
+    const verificationCode = generateVerificationCode();
+    const verificationCodeExpires = new Date();
+    verificationCodeExpires.setHours(verificationCodeExpires.getHours() + 24); // Valido per 24 ore
+
+    // Crea l'utente (non verificato)
     const user = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
         name: name || null,
+        emailVerified: false,
+        verificationCode,
+        verificationCodeExpires,
       },
       select: {
         id: true,
@@ -44,11 +52,20 @@ export async function POST(request: Request) {
       },
     });
 
-    // Crea la sessione
-    await createSession(user.id);
+    // Invia email di verifica
+    const emailSent = await sendVerificationEmail(email, name || null, verificationCode);
+    
+    if (!emailSent) {
+      console.error('Errore nell\'invio email di verifica');
+      // Non fallisce la registrazione, ma avvisa l'utente
+    }
 
     return NextResponse.json(
-      { user, message: 'Registrazione completata con successo' },
+      { 
+        user, 
+        message: 'Registrazione completata. Controlla la tua email per il codice di verifica.',
+        requiresVerification: true,
+      },
       { status: 201 }
     );
   } catch (error) {

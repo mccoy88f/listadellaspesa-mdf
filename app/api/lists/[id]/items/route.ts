@@ -6,6 +6,7 @@ import { z } from 'zod';
 const createItemSchema = z.object({
   name: z.string().min(1, 'Il nome è obbligatorio'),
   quantity: z.string().optional(),
+  characteristics: z.string().optional(),
 });
 
 // POST /api/lists/[id]/items - Aggiunge un oggetto alla lista
@@ -51,16 +52,33 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { name, quantity } = createItemSchema.parse(body);
+    const { name, quantity, characteristics } = createItemSchema.parse(body);
 
     // Normalizza il nome per lo storico (lowercase, trim)
     const normalizedName = name.toLowerCase().trim();
+
+    // Cerca prodotti simili nello storico (contiene o è contenuto)
+    const allHistory = await prisma.itemHistory.findMany({
+      where: {
+        userId: user.id,
+      },
+      orderBy: {
+        lastAddedAt: 'desc',
+      },
+    });
+
+    // Trova il prodotto più simile (contiene o è contenuto nel nome)
+    const similarItem = allHistory.find(h => {
+      const historyName = h.itemName.toLowerCase();
+      return historyName.includes(normalizedName) || normalizedName.includes(historyName);
+    });
 
     // Crea l'oggetto
     const item = await prisma.shoppingListItem.create({
       data: {
         name,
         quantity: quantity || null,
+        characteristics: characteristics || null,
         listId,
       },
     });
@@ -85,7 +103,14 @@ export async function POST(
       },
     });
 
-    return NextResponse.json(item, { status: 201 });
+    // Restituisci anche informazioni su prodotti simili trovati
+    return NextResponse.json({
+      item,
+      similarItem: similarItem ? {
+        name: similarItem.itemName,
+        lastAddedAt: similarItem.lastAddedAt,
+      } : null,
+    }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

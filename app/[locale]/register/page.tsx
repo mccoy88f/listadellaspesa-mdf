@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { useLocale } from "next-intl"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,8 +13,12 @@ import { ShoppingCart } from "lucide-react"
 
 export default function RegisterPage() {
   const router = useRouter()
+  const locale = useLocale()
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
+  const [showVerification, setShowVerification] = useState(false)
+  const [verificationCode, setVerificationCode] = useState("")
+  const [registeredEmail, setRegisteredEmail] = useState("")
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -37,13 +42,18 @@ export default function RegisterPage() {
         throw new Error(data.error || "Errore durante la registrazione")
       }
 
-      toast({
-        title: "Registrazione completata!",
-        description: "Account creato con successo",
-      })
-
-      router.push("/dashboard")
-      router.refresh()
+      // Se richiede verifica, mostra il form di verifica
+      if (data.requiresVerification) {
+        setShowVerification(true)
+        setRegisteredEmail(formData.email)
+        toast({
+          title: "Registrazione completata!",
+          description: "Controlla la tua email per il codice di verifica",
+        })
+      } else {
+        router.push(`/${locale}/dashboard`)
+        router.refresh()
+      }
     } catch (error) {
       toast({
         title: "Errore",
@@ -53,6 +63,92 @@ export default function RegisterPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleVerifyEmail = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+
+    try {
+      const response = await fetch("/api/auth/verify-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: registeredEmail,
+          code: verificationCode,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Errore durante la verifica")
+      }
+
+      toast({
+        title: "Email verificata!",
+        description: "Account verificato con successo",
+      })
+
+      router.push(`/${locale}/dashboard`)
+      router.refresh()
+    } catch (error) {
+      toast({
+        title: "Errore",
+        description: error instanceof Error ? error.message : "Errore durante la verifica",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (showVerification) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="space-y-1 text-center">
+            <div className="flex justify-center mb-4">
+              <ShoppingCart className="h-12 w-12 text-primary" />
+            </div>
+            <CardTitle className="text-2xl font-bold">Verifica Email</CardTitle>
+            <CardDescription>
+              Inserisci il codice di verifica inviato a {registeredEmail}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleVerifyEmail} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="code">Codice di verifica</Label>
+                <Input
+                  id="code"
+                  type="text"
+                  maxLength={6}
+                  value={verificationCode}
+                  onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
+                  placeholder="000000"
+                  required
+                  className="text-center text-2xl tracking-widest"
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={loading || verificationCode.length !== 6}>
+                {loading ? "Verifica in corso..." : "Verifica"}
+              </Button>
+            </form>
+            <div className="mt-4 text-center text-sm">
+              <span className="text-muted-foreground">Non hai ricevuto il codice? </span>
+              <Button
+                variant="link"
+                className="p-0 h-auto"
+                onClick={() => setShowVerification(false)}
+              >
+                Torna alla registrazione
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (

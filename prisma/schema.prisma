@@ -16,6 +16,9 @@ model User {
   email           String           @unique
   name            String?
   password        String           // Hash della password
+  emailVerified   Boolean          @default(false)
+  verificationCode String?         // Codice di verifica email
+  verificationCodeExpires DateTime? // Scadenza codice verifica
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   
@@ -34,6 +37,7 @@ model ShoppingList {
   id          Int            @id @default(autoincrement())
   name        String
   description String?
+  store       String?        // Venditore/Negozio
   ownerId     Int
   owner       User           @relation("ListOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   createdAt   DateTime       @default(now())
@@ -48,14 +52,16 @@ model ShoppingList {
 
 // Modello Oggetto nella Lista
 model ShoppingListItem {
-  id          Int          @id @default(autoincrement())
-  name        String
-  quantity    String?      // Es: "2", "1kg", "500g"
-  completed   Boolean      @default(false)
-  listId      Int
-  list        ShoppingList @relation(fields: [listId], references: [id], onDelete: Cascade)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id             Int          @id @default(autoincrement())
+  name           String
+  quantity       String?      // Es: "2", "1kg", "500g"
+  characteristics String?      // Es: "integrale", "notte", "senza glutine"
+  completed      Boolean      @default(false)
+  completedBy    Int?         // ID utente che ha completato l'item
+  listId         Int
+  list           ShoppingList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
   completedAt DateTime?
 
   @@map("shopping_list_items")

@@ -36,6 +36,17 @@ export async function POST(request: Request) {
       );
     }
 
+    // Verifica che l'email sia verificata
+    if (!user.emailVerified) {
+      return NextResponse.json(
+        { 
+          error: 'Email non verificata. Controlla la tua email per il codice di verifica.',
+          requiresVerification: true,
+        },
+        { status: 403 }
+      );
+    }
+
     // Crea la sessione
     await createSession(user.id);
 

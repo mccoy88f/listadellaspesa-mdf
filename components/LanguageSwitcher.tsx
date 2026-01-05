@@ -23,12 +23,25 @@ export function LanguageSwitcher() {
   const pathname = usePathname()
 
   const switchLocale = (newLocale: string) => {
-    // Rimuovi la lingua corrente dal pathname
-    const pathWithoutLocale = pathname.replace(`/${locale}`, '') || '/'
-    // Aggiungi la nuova lingua
-    const newPath = `/${newLocale}${pathWithoutLocale}`
-    router.push(newPath)
-    router.refresh()
+    if (newLocale === locale) return
+    
+    // Estrai il path senza il locale
+    const pathSegments = pathname.split('/').filter(Boolean)
+    const currentLocale = pathSegments[0]
+    
+    // Se il primo segmento è una lingua valida, rimuovilo
+    let pathWithoutLocale = '/'
+    if (locales.includes(currentLocale as any)) {
+      pathWithoutLocale = '/' + pathSegments.slice(1).join('/')
+    } else {
+      pathWithoutLocale = pathname
+    }
+    
+    // Costruisci il nuovo path con la nuova lingua
+    const newPath = `/${newLocale}${pathWithoutLocale === '/' ? '' : pathWithoutLocale}`
+    
+    // Usa window.location per un refresh completo
+    window.location.href = newPath
   }
 
   return (
