@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  # Database PostgreSQL
+  db:
+    image: postgres:16-alpine
+    container_name: nextjs-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: apppassword
+      POSTGRES_DB: appdb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U appuser -d appdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Applicazione Next.js
+  app:
+    build:
+      context: https://github.com/mccoy88f/listadellaspesa-mdf.git#main
+      dockerfile: Dockerfile
+    container_name: nextjs-app
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://appuser:apppassword@db:5432/appdb
+      NODE_ENV: ${NODE_ENV:-development}
+    volumes:
+      - app_data:/app
+      - /app/node_modules
+      - /app/.next
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app-network
+    command: npm run dev
+
+  # Prisma Studio (GUI per database)
+  prisma-studio:
+    build:
+      context: https://github.com/mccoy88f/listadellaspesa-mdf.git#main
+      dockerfile: Dockerfile
+    container_name: prisma-studio
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://appuser:apppassword@db:5432/appdb
+    volumes:
+      - app_data:/app
+      - /app/node_modules
+    ports:
+      - "5555:5555"
+    depends_on:
+      db:
+        condition: service_healthy
+      app:
+        condition: service_started
+    networks:
+      - app-network
+    command: npx prisma studio --port 5555 --hostname 0.0.0.0
+
+volumes:
+  postgres_data:
+    driver: local
+  app_data:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
