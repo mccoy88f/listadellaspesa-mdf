@@ -1,0 +1,14 @@
+# PACCHETTI DI SISTEMA (Alpine Linux)
+# Aggiungi qui i pacchetti apk da installare nel container
+# Un pacchetto per riga
+#
+# Esempi comuni:
+# curl
+# git
+# python3
+# py3-pip
+# imagemagick
+# ffmpeg
+# postgresql-client
+
+# Aggiungi i tuoi pacchetti qui sotto:

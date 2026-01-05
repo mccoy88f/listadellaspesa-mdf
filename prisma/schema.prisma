@@ -1,0 +1,106 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Modello Utente
+model User {
+  id              Int              @id @default(autoincrement())
+  email           String           @unique
+  name            String?
+  password        String           // Hash della password
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  
+  // Relazioni
+  ownedLists      ShoppingList[]   @relation("ListOwner")
+  sharedLists     SharedList[]     // Liste condivise con questo utente
+  sentNotifications Notification[] @relation("NotificationSender")
+  receivedNotifications Notification[] @relation("NotificationReceiver")
+  itemHistory     ItemHistory[]    // Storico oggetti aggiunti
+
+  @@map("users")
+}
+
+// Modello Lista della Spesa
+model ShoppingList {
+  id          Int            @id @default(autoincrement())
+  name        String
+  description String?
+  ownerId     Int
+  owner       User           @relation("ListOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  
+  // Relazioni
+  items       ShoppingListItem[]
+  sharedWith  SharedList[]
+
+  @@map("shopping_lists")
+}
+
+// Modello Oggetto nella Lista
+model ShoppingListItem {
+  id          Int          @id @default(autoincrement())
+  name        String
+  quantity    String?      // Es: "2", "1kg", "500g"
+  completed   Boolean      @default(false)
+  listId      Int
+  list        ShoppingList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  completedAt DateTime?
+
+  @@map("shopping_list_items")
+}
+
+// Modello Condivisione Lista
+model SharedList {
+  id        Int          @id @default(autoincrement())
+  listId    Int
+  list      ShoppingList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  canEdit   Boolean      @default(true) // Permessi di modifica
+  createdAt DateTime     @default(now())
+
+  @@unique([listId, userId])
+  @@map("shared_lists")
+}
+
+// Modello Notifica
+model Notification {
+  id          Int      @id @default(autoincrement())
+  type        String   // "shopping_alert", "list_shared", "item_added", etc.
+  title       String
+  message     String
+  senderId    Int
+  sender      User     @relation("NotificationSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId  Int
+  receiver    User     @relation("NotificationReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  listId      Int?     // ID lista correlata (opzionale)
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@map("notifications")
+}
+
+// Modello Storico Oggetti
+model ItemHistory {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemName    String   // Nome normalizzato dell'oggetto
+  lastAddedAt DateTime @default(now()) // Data ultimo aggiunto
+  timesAdded  Int      @default(1) // Numero di volte aggiunto
+
+  @@unique([userId, itemName])
+  @@map("item_history")
+}

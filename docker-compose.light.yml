@@ -1,0 +1,38 @@
+version: '3.8'
+
+# Configurazione ULTRA LEGGERA
+# Uso: docker-compose -f docker-compose.yml -f docker-compose.light.yml up
+
+services:
+  # PostgreSQL con limiti memoria
+  db:
+    environment:
+      # Riduci memoria PostgreSQL
+      POSTGRES_INITDB_ARGS: "-c shared_buffers=32MB -c max_connections=20"
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
+
+  # App Next.js con limiti
+  app:
+    environment:
+      # Riduci worker Node.js
+      NODE_OPTIONS: "--max-old-space-size=256"
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+        reservations:
+          memory: 256M
+
+  # Disabilita Prisma Studio per risparmiare RAM
+  prisma-studio:
+    profiles:
+      - studio-only
+    deploy:
+      resources:
+        limits:
+          memory: 128M

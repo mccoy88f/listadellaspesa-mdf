@@ -1,0 +1,63 @@
+# PACCHETTI NPM AGGIUNTIVI
+# Aggiungi qui i pacchetti da installare automaticamente all'avvio
+# Un pacchetto per riga, con versione opzionale
+# Riavvia con: docker-compose restart app
+
+# ═══════════════════════════════════════════════════════════
+# 📦 PACCHETTI COMUNI - Decommentali se ti servono
+# ═══════════════════════════════════════════════════════════
+
+# HTTP Client
+# axios
+
+# Utilities
+# lodash
+# date-fns
+
+# Validazione & Form
+# zod
+# react-hook-form
+
+# State Management
+# zustand
+# @tanstack/react-query
+
+# Autenticazione
+# next-auth
+# bcryptjs
+# jsonwebtoken
+# @types/bcryptjs
+# @types/jsonwebtoken
+
+# Email
+# nodemailer
+# @types/nodemailer
+
+# Upload Files
+# multer
+# @types/multer
+
+# Payment
+# stripe
+# @stripe/stripe-js
+
+# UI Utilities
+# react-hot-toast
+# sonner
+
+# Charts
+# recharts
+# chart.js
+# react-chartjs-2
+
+# PDF
+# jspdf
+# @react-pdf/renderer
+
+# Excel
+# xlsx
+
+# ═══════════════════════════════════════════════════════════
+# 🎯 I TUOI PACCHETTI - Aggiungili qui sotto
+# ═══════════════════════════════════════════════════════════
+
