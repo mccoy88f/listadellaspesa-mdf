@@ -69,32 +69,15 @@ NODE_ENV=production
 2. Attendi che i container vengano creati e avviati
 3. Verifica lo stato nella dashboard
 
-### Passo 5: Inizializza il Database
+### Passo 5: Verifica l'Applicazione
 
-Dopo che i container sono avviati:
+✅ **Il database viene inizializzato automaticamente!**
 
-1. Vai su **Containers**
-2. Trova il container `nextjs-app`
-3. Clicca sul nome per aprire i dettagli
-4. Vai su **Console**
-5. Esegui questi comandi:
+Il servizio `init` nel docker-compose esegue automaticamente:
+- `npm run prisma:push` - Crea le tabelle
+- `npm run prisma:seed` - Crea l'utente admin
 
-```bash
-npm run prisma:push
-npm run prisma:seed
-```
-
-**Oppure tramite Portainer:**
-
-1. Vai su **Containers** → `nextjs-app`
-2. Clicca **Exec** (icona terminale)
-3. Esegui:
-   ```bash
-   npm run prisma:push
-   npm run prisma:seed
-   ```
-
-### Passo 6: Verifica l'Applicazione
+Non devi eseguire manualmente questi comandi! Il container `nextjs-init` li esegue automaticamente al primo avvio e poi termina.
 
 - **App**: `http://TUO-IP:3000` o `http://TUO-DOMINIO:3000`
 - **Prisma Studio**: `http://TUO-IP:5555` o `http://TUO-DOMINIO:5555`
@@ -282,12 +265,13 @@ npm run build && npm start
 
 - [ ] Stack creato in Portainer
 - [ ] Container database avviato
+- [ ] Container init completato (inizializza automaticamente il database)
 - [ ] Container app avviato
 - [ ] Container Prisma Studio avviato (opzionale)
-- [ ] Database inizializzato (`prisma:push`)
-- [ ] Utente admin creato (`prisma:seed`)
 - [ ] App accessibile su porta 3000
 - [ ] Prisma Studio accessibile su porta 5555
+
+**Nota**: Il database viene inizializzato automaticamente dal container `init`. Non serve eseguire manualmente `prisma:push` e `prisma:seed`.
 
 ---
 

@@ -16,6 +16,11 @@ services:
       - "5432:5432"
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U appuser -d appdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # Applicazione Next.js
   app:
@@ -34,10 +39,41 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      init:
+        condition: service_completed_successfully
     networks:
       - app-network
     command: npm run dev
+
+  # Init: Inizializza il database (esegue solo una volta)
+  init:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nextjs-init
+    environment:
+      DATABASE_URL: postgresql://appuser:apppassword@db:5432/appdb
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app-network
+    command: >
+      sh -c "
+        echo '⏳ Attendo che il database sia pronto...' &&
+        sleep 5 &&
+        echo '🗄️  Inizializzazione database...' &&
+        npm run prisma:push &&
+        echo '🌱 Creazione utente admin...' &&
+        npm run prisma:seed &&
+        echo '✅ Database inizializzato con successo!'
+      "
+    restart: "no"
 
   # Prisma Studio (GUI per database)
   prisma-studio:
@@ -55,6 +91,7 @@ services:
       - "5555:5555"
     depends_on:
       - db
+      - init
     networks:
       - app-network
     command: npx prisma studio --port 5555 --hostname 0.0.0.0

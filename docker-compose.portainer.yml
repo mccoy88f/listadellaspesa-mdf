@@ -22,6 +22,34 @@ services:
       timeout: 5s
       retries: 5
 
+  # Init: Inizializza il database (esegue solo una volta)
+  init:
+    build:
+      context: https://github.com/mccoy88f/listadellaspesa-mdf.git#main
+      dockerfile: Dockerfile
+    container_name: nextjs-init
+    environment:
+      DATABASE_URL: postgresql://appuser:apppassword@db:5432/appdb
+    volumes:
+      - app_data:/app
+      - /app/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app-network
+    command: >
+      sh -c "
+        echo '⏳ Attendo che il database sia pronto...' &&
+        sleep 5 &&
+        echo '🗄️  Inizializzazione database...' &&
+        npm run prisma:push &&
+        echo '🌱 Creazione utente admin...' &&
+        npm run prisma:seed &&
+        echo '✅ Database inizializzato con successo!'
+      "
+    restart: "no"
+
   # Applicazione Next.js
   app:
     build:
@@ -41,6 +69,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      init:
+        condition: service_completed_successfully
     networks:
       - app-network
     command: npm run dev
@@ -62,8 +92,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
-      app:
-        condition: service_started
+      init:
+        condition: service_completed_successfully
     networks:
       - app-network
     command: npx prisma studio --port 5555 --hostname 0.0.0.0
